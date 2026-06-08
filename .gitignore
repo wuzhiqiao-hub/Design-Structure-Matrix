@@ -1,2 +1,7 @@
 __pycache__/
 *.pyc
+.DS_Store
+report.txt
+dsm_ism_report.txt
+ism_graph.dot
+*.pyz

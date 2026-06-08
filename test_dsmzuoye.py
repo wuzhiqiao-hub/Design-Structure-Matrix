@@ -33,11 +33,45 @@ class DSMISMTests(unittest.TestCase):
             validate_matrix([[0, 1], [1]], ["A", "B"])
 
     def test_validate_rejects_non_binary_value(self):
-        with self.assertRaisesRegex(ValueError, "must be 0 or 1"):
+        with self.assertRaisesRegex(ValueError, "between 0 and 1"):
             validate_matrix([[0, 2], [1, 0]], ["A", "B"])
 
+    def test_analyze_continuous_relationship_strengths(self):
+        labels = ["A", "B", "C"]
+        matrix = [
+            [0, 0.8, 0],
+            [0, 0, 0.6],
+            [0, 0, 0],
+        ]
+
+        result = analyze(labels, matrix, threshold=0.5)
+
+        self.assertEqual(
+            result.reachability_matrix,
+            [
+                [1, 0.8, 0.6],
+                [0, 1, 0.6],
+                [0, 0, 1],
+            ],
+        )
+        self.assertEqual(result.levels, [["C"], ["B"], ["A"]])
+        self.assertEqual(result.driving_power, [2.4, 1.6, 1])
+        self.assertEqual(result.dependence_power, [1, 1.8, 2.2])
+
+    def test_threshold_changes_continuous_leveling(self):
+        labels = ["A", "B", "C"]
+        matrix = [
+            [0, 0.8, 0],
+            [0, 0, 0.6],
+            [0, 0, 0],
+        ]
+
+        result = analyze(labels, matrix, threshold=0.7)
+
+        self.assertEqual(result.levels, [["B", "C"], ["A"]])
+
     def test_read_csv_matrix(self):
-        csv_text = ",A,B\nA,0,1\nB,0,0\n"
+        csv_text = ",A,B\nA,0,0.75\nB,0,0\n"
         with tempfile.TemporaryDirectory() as temp_dir:
             path = Path(temp_dir) / "matrix.csv"
             path.write_text(csv_text, encoding="utf-8")
@@ -45,7 +79,7 @@ class DSMISMTests(unittest.TestCase):
             labels, matrix = read_csv_matrix(path)
 
         self.assertEqual(labels, ["A", "B"])
-        self.assertEqual(matrix, [[0, 1], [0, 0]])
+        self.assertEqual(matrix, [[0, 0.75], [0, 0]])
 
     def test_read_csv_rejects_mismatched_labels(self):
         csv_text = ",A,B\nA,0,1\nC,0,0\n"
